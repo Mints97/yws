@@ -8,6 +8,7 @@ OBJS = \
 	ioapic.o\
 	kalloc.o\
 	kbd.o\
+	mouse.o\
 	lapic.o\
 	log.o\
 	main.o\

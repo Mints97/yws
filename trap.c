@@ -32,6 +32,12 @@ idtinit(void)
   lidt(idt, sizeof(idt));
 }
 
+void
+mouse_event(int lbtn, int rbtn, int mbtn, int dx, int dy)
+{
+   cprintf("lbtn = %d, rbtn = %d, mbtn = %d, dx = %d, dy = %d\n", lbtn, rbtn, mbtn, dx, dy);
+}
+
 //PAGEBREAK: 41
 void
 trap(struct trapframe *tf)
@@ -75,6 +81,10 @@ trap(struct trapframe *tf)
   case T_IRQ0 + IRQ_SPURIOUS:
     cprintf("cpu%d: spurious interrupt at %x:%x\n",
             cpunum(), tf->cs, tf->eip);
+    lapiceoi();
+    break;
+  case T_IRQ0 + IRQ_MOUSE:
+    mouse_handler(mouse_event);
     lapiceoi();
     break;
 
