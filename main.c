@@ -26,9 +26,9 @@ main(void)
   picinit();       // another interrupt controller
   ioapicinit();    // another interrupt controller
   consoleinit();   // console hardware
-  
-  mouseinit();
-
+  mouseinit();     // NEW: enable mouse
+  vgainit();       // NEW: set up VGA palette
+  move_cursor(0, 0, 0, 0); // NEW: set cursor
   uartinit();      // serial port
   pinit();         // process table
   tvinit();        // trap vectors

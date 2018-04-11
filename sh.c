@@ -141,6 +141,27 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
+void
+drawwelcome(void)
+{
+  int fd = open("welcome.bmp", O_RDONLY);
+
+  char imgheader[0x36] = {0};
+
+  read(fd, imgheader, 0x36);
+
+  uint w = ((uint*)(imgheader + 0x12))[0];
+  uint h = ((uint*)(imgheader + 0x16))[0];
+
+  char *imgdata = malloc(w * h * 4);
+
+  read(fd, imgdata, w * h * 4);
+
+  drawbmp(10, 10, imgdata, w, h);
+
+  close(fd);
+}
+
 int
 main(void)
 {
@@ -154,6 +175,8 @@ main(void)
       break;
     }
   }
+
+  drawwelcome();
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){

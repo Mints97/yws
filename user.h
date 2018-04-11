@@ -24,6 +24,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
+int drawbmp(uint x, uint y, char *imgdata, uint w, uint h);
+
 // ulib.c
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);

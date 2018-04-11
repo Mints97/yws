@@ -75,6 +75,16 @@ void            kbdintr(void);
 void mouseinit(void);
 void mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy));
 
+// cursor.c
+void move_cursor(int oldx, int oldy, int dx, int dy);
+
+// vga.c
+void            vgainit(void);
+void            redraw(int col, int row, uint w, uint h);
+void            draw(int col, int row, const unsigned char *buf, uint w, uint h, int drawtomain);
+void            draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, int drawtomain);
+void            draw_rgb(int x, int y, const uint *rgb_buf, uint w, uint h, int revrows);
+
 // lapic.c
 void            cmostime(struct rtcdate *r);
 int             cpunum(void);

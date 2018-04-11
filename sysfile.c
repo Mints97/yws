@@ -439,3 +439,22 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+
+
+int
+sys_drawbmp(void)
+{
+  int x, y, w, h;
+  char *imgdata;
+
+  if(argint(0, &x) < 0 || argint(1, &y) < 0
+      || argint(3, &w) < 0 || argint(4, &h) < 0
+      || argptr(2, &imgdata, x * y * sizeof(uint)) < 0)
+    return -1;
+
+  draw_rgb((uint)x, (uint)y, (uint*)imgdata, (uint)w, (uint)h, 1);
+  redraw((uint)x, (uint)y, (uint)w, (uint)h);
+
+  return 0;
+}

@@ -9,6 +9,8 @@ OBJS = \
 	kalloc.o\
 	kbd.o\
 	mouse.o\
+	cursor.o\
+	vga.o\
 	lapic.o\
 	log.o\
 	main.o\
@@ -157,6 +159,9 @@ mkfs: mkfs.c fs.h
 # http://www.gnu.org/software/make/manual/html_node/Chained-Rules.html
 .PRECIOUS: %.o
 
+AUXFILES=\
+	welcome.bmp\
+
 UPROGS=\
 	_cat\
 	_echo\
@@ -170,12 +175,12 @@ UPROGS=\
 	_rm\
 	_sh\
 	_stressfs\
-	_usertests\
 	_wc\
 	_zombie\
+	_usertests\
 
-fs.img: mkfs README $(UPROGS)
-	./mkfs fs.img README $(UPROGS)
+fs.img: mkfs README $(AUXFILES) $(UPROGS)
+	./mkfs fs.img README $(AUXFILES) $(UPROGS)
 
 -include *.d
 

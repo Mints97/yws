@@ -91,6 +91,7 @@ mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy))
   }
 
 #undef FLAGSBIT
+#undef SEXT_INT_MASK
 
   ninterrupt = (ninterrupt + 1) % 3; // 3 interrupts
 }
@@ -102,7 +103,7 @@ mouseinit(void)
   
   //Enable the auxiliary mouse device
   mouse_wait_busybit();
-  outb(0x64, 0xA8); // This turns on the mouse input●
+  outb(0x64, 0xA8); // This turns on the mouse input
                     // Also clears the “disable mouse” bit in the command byte register
   
   //Enable the interrupts
@@ -110,7 +111,6 @@ mouseinit(void)
   outb(0x64, 0x20);
   mouse_wait_dataready();
   char status = inb(0x60) | 2;
-  //mouse_wait(1);
   outb(0x64, status);
   mouse_wait_busybit();
   outb(0x64, 0x60);
@@ -134,4 +134,7 @@ mouseinit(void)
   // Actually listen to the interrupts!
   picenable(IRQ_MOUSE);
   ioapicenable(IRQ_MOUSE, 0);
+
+  // TODO: lock on the keyboard's lock on every action to avoid messing with
+  // each other's data on the channels!
 }
