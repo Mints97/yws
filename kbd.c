@@ -13,7 +13,8 @@ kbdgetc(void)
   uint st, data, c;
 
   st = inb(KBSTATP);
-  if((st & KBS_DIB) == 0)
+  if((st & KBS_DIB) == 0 // available
+      || (st & (1 << 5))) // data from mouse!
     return -1;
   data = inb(KBDATAP);
 

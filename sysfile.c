@@ -453,7 +453,7 @@ sys_drawbmp(void)
       || argptr(2, &imgdata, x * y * sizeof(uint)) < 0)
     return -1;
 
-  draw_rgb((uint)x, (uint)y, (uint*)imgdata, (uint)w, (uint)h, 1);
+  draw_bmp((uint)x, (uint)y, (uint*)imgdata, (uint)w, (uint)h, 1);
   redraw((uint)x, (uint)y, (uint)w, (uint)h);
 
   return 0;

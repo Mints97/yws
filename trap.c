@@ -45,8 +45,8 @@ mouse_event(int lbtn, int rbtn, int mbtn, int dx, int dy)
   mousex += dx;
   mousey += dy;
 
-  //cprintf("(x = %d, y = %d)\n", mousex, mousey);
-  //cprintf("lbtn = %d, rbtn = %d, mbtn = %d, dx = %d, dy = %d\n", lbtn, rbtn, mbtn, dx, dy);
+//  cprintf("(x = %d, y = %d) ", mousex, mousey);
+//  cprintf("lbtn = %d, rbtn = %d, mbtn = %d, dx = %d, dy = %d\n", lbtn, rbtn, mbtn, dx, dy);
 }
 
 //PAGEBREAK: 41
@@ -95,9 +95,6 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_MOUSE:
-    if(cpunum() != 0){
-      panic("Wrong cpu!");
-    }
     mouse_handler(mouse_event);
     lapiceoi();
     break;

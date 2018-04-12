@@ -83,7 +83,7 @@ void            vgainit(void);
 void            redraw(int col, int row, uint w, uint h);
 void            draw(int col, int row, const unsigned char *buf, uint w, uint h, int drawtomain);
 void            draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, int drawtomain);
-void            draw_rgb(int x, int y, const uint *rgb_buf, uint w, uint h, int revrows);
+void            draw_bmp(int x, int y, const uint *rgb_buf, uint w, uint h, int revrows);
 
 // lapic.c
 void            cmostime(struct rtcdate *r);
