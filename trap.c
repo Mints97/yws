@@ -32,23 +32,6 @@ idtinit(void)
   lidt(idt, sizeof(idt));
 }
 
-void
-mouse_event(int lbtn, int rbtn, int mbtn, int dx, int dy)
-{ // apparently everything being zero means mouse wheel has been spun:w
-  static int mousex = 0;
-  static int mousey = 0;
-
-  dy *= -1; // invert so that y is counted from top
-
-  move_cursor(mousex, mousey, dx, dy);
-
-  mousex += dx;
-  mousey += dy;
-
-//  cprintf("(x = %d, y = %d) ", mousex, mousey);
-//  cprintf("lbtn = %d, rbtn = %d, mbtn = %d, dx = %d, dy = %d\n", lbtn, rbtn, mbtn, dx, dy);
-}
-
 //PAGEBREAK: 41
 void
 trap(struct trapframe *tf)
@@ -95,7 +78,7 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
   case T_IRQ0 + IRQ_MOUSE:
-    mouse_handler(mouse_event);
+    mouse_handler(cursor_action);
     lapiceoi();
     break;
 

@@ -121,7 +121,7 @@ mouseinit(void)
   outb(MOUSE_CMDPORT, 0x20);
   mouse_wait_dataready();
   char status = inb(MOUSE_DATAPORT) | 2;
-  outb(MOUSE_CMDPORT, status);
+//  outb(MOUSE_CMDPORT, status);
   mouse_wait_busybit();
   outb(MOUSE_CMDPORT, MOUSE_DATAPORT);
   mouse_wait_busybit();
@@ -144,7 +144,4 @@ mouseinit(void)
   // Actually listen to the interrupts!
   picenable(IRQ_MOUSE);
   ioapicenable(IRQ_MOUSE, 0);
-
-  // TODO: lock on the keyboard's lock on every action to avoid messing with
-  // each other's data on the channels!
 }

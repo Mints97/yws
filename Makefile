@@ -10,6 +10,7 @@ OBJS = \
 	kbd.o\
 	mouse.o\
 	cursor.o\
+	keventq.o\
 	vga.o\
 	lapic.o\
 	log.o\
@@ -178,6 +179,7 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_usertests\
+	_ywindowserver\
 
 fs.img: mkfs README $(AUXFILES) $(UPROGS)
 	./mkfs fs.img README $(AUXFILES) $(UPROGS)

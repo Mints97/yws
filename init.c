@@ -20,15 +20,15 @@ main(void)
   dup(0);  // stderr
 
   for(;;){
-    printf(1, "init: starting sh\n");
+    printf(1, "init: starting window server\n");
     pid = fork();
     if(pid < 0){
       printf(1, "init: fork failed\n");
       exit();
     }
     if(pid == 0){
-      exec("sh", argv);
-      printf(1, "init: exec sh failed\n");
+      exec("ywindowserver", argv);
+      printf(1, "init: exec ywindowserver failed\n");
       exit();
     }
     while((wpid=wait()) >= 0 && wpid != pid)

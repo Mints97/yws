@@ -24,7 +24,10 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
-int drawbmp(uint x, uint y, char *imgdata, uint w, uint h);
+int draw(uint x, uint y, uchar *imgdata, int onecolor, uint w, uint h, int drawthrough);
+int drawmasked(uint x, uint y, uchar *imgdata, char *mask, uint w, uint h, int drawthrough);
+int redraw(uint x, uint y, uint w, uint h);
+int getuserevent(void);
 
 // ulib.c
 int stat(char*, struct stat*);

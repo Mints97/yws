@@ -98,7 +98,11 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_drawbmp(void);
+
+extern int sys_draw(void);
+extern int sys_drawmasked(void);
+extern int sys_redraw(void);
+extern int sys_getuserevent(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -122,7 +126,11 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_drawbmp] sys_drawbmp,
+
+[SYS_draw]    sys_draw,
+[SYS_drawmasked] sys_drawmasked,
+[SYS_redraw]  sys_redraw,
+[SYS_getuserevent] sys_getuserevent,
 };
 
 void

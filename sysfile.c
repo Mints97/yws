@@ -5,6 +5,7 @@
 //
 
 #include "types.h"
+#include "vga.h"
 #include "defs.h"
 #include "param.h"
 #include "stat.h"
@@ -443,18 +444,60 @@ sys_pipe(void)
 
 
 int
-sys_drawbmp(void)
+sys_draw(void)
 {
-  int x, y, w, h;
+  int x, y, w, h, onecolor, drawthrough;
   char *imgdata;
 
   if(argint(0, &x) < 0 || argint(1, &y) < 0
-      || argint(3, &w) < 0 || argint(4, &h) < 0
-      || argptr(2, &imgdata, x * y * sizeof(uint)) < 0)
+      || argint(2, &onecolor) < 0
+      || argint(4, &w) < 0 || argint(5, &h) < 0
+      || argptr(2, &imgdata, onecolor ? 1 : x * y) < 0
+      || argint(6, &drawthrough) < 0)
     return -1;
 
-  draw_bmp((uint)x, (uint)y, (uint*)imgdata, (uint)w, (uint)h, 1);
-  redraw((uint)x, (uint)y, (uint)w, (uint)h);
+  draw((uint)x, (uint)y, (uchar*)imgdata, onecolor, (uint)w, (uint)h,
+      drawthrough ? DRAWDEST_BOTH : DRAWDEST_MAINLAYER, 0);
+  //redraw((uint)x, (uint)y, (uint)w, (uint)h);
 
   return 0;
+}
+
+int
+sys_drawmasked(void)
+{
+  int x, y, w, h, drawthrough;
+  char *imgdata, *maskdata;
+
+  if(argint(0, &x) < 0 || argint(1, &y) < 0
+      || argint(4, &w) < 0 || argint(5, &h) < 0
+      || argptr(2, &imgdata, x * y) < 0
+      || argptr(3, &maskdata, x * y) < 0
+      || argint(6, &drawthrough) < 0)
+    return -1;
+
+  draw_masked((uint)x, (uint)y, (uchar*)imgdata, (uchar*)maskdata, (uint)w, (uint)h,
+      drawthrough ? DRAWDEST_BOTH : DRAWDEST_MAINLAYER, 0);
+  //redraw((uint)x, (uint)y, (uint)w, (uint)h);
+
+  return 0;
+}
+
+int
+sys_redraw(void)
+{
+  int x, y, w, h;
+
+  if(argint(0, &x) < 0 || argint(1, &y) < 0
+      || argint(2, &w) < 0 || argint(3, &h) < 0)
+    return -1;
+
+  redraw((uint)x, (uint)y, (uint)w, (uint)h, 0);
+  return 0;
+}
+
+int
+sys_getuserevent(void)
+{
+  return deqevent();
 }

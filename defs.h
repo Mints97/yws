@@ -9,6 +9,8 @@ struct spinlock;
 struct stat;
 struct superblock;
 
+enum drawdest;
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -72,18 +74,25 @@ void            kinit2(void*, void*);
 void            kbdintr(void);
 
 // mouse.c
-void mouseinit(void);
-void mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy));
+void            mouseinit(void);
+void            mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy));
 
 // cursor.c
-void move_cursor(int oldx, int oldy, int dx, int dy);
+void            cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy);
+void            cursorinit(void);
 
 // vga.c
 void            vgainit(void);
-void            redraw(int col, int row, uint w, uint h);
-void            draw(int col, int row, const unsigned char *buf, uint w, uint h, int drawtomain);
-void            draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, int drawtomain);
-void            draw_bmp(int x, int y, const uint *rgb_buf, uint w, uint h, int revrows);
+void            redraw(int col, int row, uint w, uint h, int fromcursor);
+void            draw(int col, int row, const unsigned char *buf, int onecolor, uint w, uint h, enum drawdest dest, int fromcursor);
+void            draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, enum drawdest dest, int fromcursor);
+
+// keventq.c
+void            initeventq(void);
+int             enq_cursormove(ushort x, unsigned short y);
+int             enq_cursorclick(int lbtn, int rbtn, int mbtn);
+int             enq_kbevent(uchar c, int released, int shiftheld, int ctlheld);
+int             deqevent(void);
 
 // lapic.c
 void            cmostime(struct rtcdate *r);

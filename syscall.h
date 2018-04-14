@@ -20,4 +20,8 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_drawbmp 22
+
+#define SYS_draw   22
+#define SYS_drawmasked 23
+#define SYS_redraw 24
+#define SYS_getuserevent 25

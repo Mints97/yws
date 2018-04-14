@@ -20,3 +20,9 @@
     ))
 
 #define OFFSET(r, c, rlen) ((r)*(rlen) + (c))
+
+enum drawdest{
+  DRAWDEST_VIDEOMEM,
+  DRAWDEST_MAINLAYER,
+  DRAWDEST_BOTH,
+};

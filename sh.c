@@ -141,7 +141,7 @@ getcmd(char *buf, int nbuf)
   return 0;
 }
 
-void
+/*void
 drawwelcome(void)
 {
   int fd = open("welcome.bmp", O_RDONLY);
@@ -160,7 +160,7 @@ drawwelcome(void)
   drawbmp(10, 10, imgdata, w, h);
 
   close(fd);
-}
+}*/
 
 int
 main(void)
@@ -176,7 +176,7 @@ main(void)
     }
   }
 
-  drawwelcome();
+  //drawwelcome();
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){
