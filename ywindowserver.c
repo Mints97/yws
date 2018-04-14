@@ -255,7 +255,7 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
     activepaneh = paneh + dimchangey;
   }
 
-  if(dimchangex){ // TODO: don't forget to update child1dim when needed?
+  if(dimchangex){
     if(pane->split == SPLIT_VERTICAL){
       resize_pane(pane->child2, panex + pane->child1dim, paney, panew - pane->child1dim, paneh,
           dimchangex, 0);
@@ -278,7 +278,29 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
       }
     }
   }
-  // TODO: resize contained image, if any
+  else if(dimchangey){
+    if(pane->split == SPLIT_HORIZONTAL){
+      resize_pane(pane->child2, panex, paney + pane->child1dim, panew, paneh - pane->child1dim,
+          0, dimchangey);
+    }
+    else if(pane->split == SPLIT_VERTICAL){
+      resize_pane(pane->child1, panex, paney, pane->child1dim, paneh,
+          0, dimchangey);
+      resize_pane(pane->child2, panex + pane->child1dim, paney, panew - pane->child1dim, paneh,
+          0, dimchangey);
+    }
+    else if(pane->split == SPLIT_NONE){
+      // TODO: resize contained image, if any
+      if(pane->display){
+      }
+      else{
+        if(dimchangey > 0){
+          uchar color = 0x00; // black bg
+          draw(panex, paney + paneh - BORDERTHICKNESS, &color, 1, panew, dimchangey, 1);
+        }
+      }
+    }
+  }
 
   pane_visual_select(panex, paney, panew + dimchangex, paneh + dimchangey, unselect); // select curr
 }
@@ -329,6 +351,31 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
       }
     }
   }
+  else if(dimchangey){
+    if(pane->split == SPLIT_HORIZONTAL){
+      pane->child1dim += dimchangey;
+      move_pane(pane->child1, panex, paney, panew, pane->child1dim - dimchangey,
+          0, dimchangey);
+    }
+    else if(pane->split == SPLIT_VERTICAL){
+      move_pane(pane->child1, panex, paney, pane->child1dim, paneh,
+          0, dimchangey);
+      move_pane(pane->child2, panex + pane->child1dim, paney, panew - pane->child1dim, paneh,
+          0, dimchangey);
+    }
+    else if(pane->split == SPLIT_NONE){
+      // TODO: move contained image, if any
+      if(pane->display){
+      }
+      else{
+        if(dimchangey < 0){
+          uchar color = 0x00; // black bg
+          draw(panex, paney + dimchangey, &color, 1, panew, -dimchangey + BORDERTHICKNESS, 1);
+        }
+      }
+    }
+
+  }
 
   pane_visual_select(panex + dimchangex, paney + dimchangey, panew - dimchangex, paneh - dimchangey, unselect); // select curr
 }
@@ -338,7 +385,7 @@ void
 eventloop(void)
 {
   int prevmousex = 0;
-//  int prevmousey = 0;
+  int prevmousey = 0;
 
   int mousex = 0;
   int mousey = 0;
@@ -365,10 +412,27 @@ eventloop(void)
                 dx, 0);
             move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
                 dx, 0);
+
             selectedsep_ch1w += dx;
             selectedsep_ch2w -= dx;
             selectedsep->parent->child1dim += dx;
             selectedsep_ch2x += dx;
+
+            pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+          }
+          else if(selectedsep->split == SPLIT_HSEPARATOR){
+            int dy = mousey - prevmousey;
+            resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
+                0, dy);
+            move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
+                0, dy);
+
+            selectedsep_ch1h += dy;
+            selectedsep_ch2h -= dy;
+            selectedsep->parent->child1dim += dy;
+            selectedsep_ch2y += dy;
+
+            pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
           }
         }
         else{
@@ -380,7 +444,7 @@ eventloop(void)
       }
 
       prevmousex = mousex;
-//      prevmousey = mousey;
+      prevmousey = mousey;
     }
     else if(event & (1 << 29)){ // keyboard key press
       char key = event & 0xFF;
