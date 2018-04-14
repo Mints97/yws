@@ -209,8 +209,8 @@ eventloop(void)
     if(event & (1 << 31)){ // cursor moved
       event = event & ~(1 << 31);
 
-      mousey = event & 0xFF;
-      mousex = (event >> 8) & 0xFF;
+      mousey = event & 0xFFFF;
+      mousex = (event >> 16) & 0xFFFF;
     }
     else if(event & (1 << 30)){ // mouse click
       if(event & (1 << 2)){ // left btn down

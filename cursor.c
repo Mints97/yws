@@ -51,7 +51,7 @@ static const unsigned char cursor_mask[CURSOR_WIDTH * CURSOR_HEIGHT] = {
 struct spinlock cursorlock;
 
 void
-cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy)
+cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent)
 {
   static short mousex = 0;
   static short mousey = 0;
@@ -75,10 +75,10 @@ cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy)
   if(mousey >= VGA_SCREEN_HEIGHT)
     mousey = VGA_SCREEN_HEIGHT - 1;
 
-  if(dx != 0 || dy != 0)
+  if(realevent){
     while(enq_cursormove(mousex, mousey) < 0); // hang until userspace can receive event
-  if(lbtn || rbtn || mbtn)
     while(enq_cursorclick(lbtn, rbtn, mbtn) < 0);
+  }
 
   draw_masked(mousex, mousey, cursor, cursor_mask, CURSOR_WIDTH, CURSOR_HEIGHT, DRAWDEST_VIDEOMEM, 1);
 

@@ -75,10 +75,10 @@ void            kbdintr(void);
 
 // mouse.c
 void            mouseinit(void);
-void            mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy));
+void            mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent));
 
 // cursor.c
-void            cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy);
+void            cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent);
 void            cursorinit(void);
 
 // vga.c

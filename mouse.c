@@ -59,7 +59,7 @@ mouse_read(void)
 }
 
 void
-mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy))
+mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent))
 {
   static int ninterrupt = 0;
   static char flags, dx;
@@ -92,7 +92,8 @@ mouse_handler(void (*mouse_event)(int lbtn, int rbtn, int mbtn, int dx, int dy))
 
     mouse_event(!!FLAGSBIT(0), !!FLAGSBIT(1), FLAGSBIT(2), 
         dx | (FLAGSBIT(4) ? SEXT_INT_MASK : 0),
-        dy | (FLAGSBIT(5) ? SEXT_INT_MASK : 0));
+        dy | (FLAGSBIT(5) ? SEXT_INT_MASK : 0),
+        1);
 
     /*if(FLAGSBIT(6))
       cprintf("dx overflowed!\n");

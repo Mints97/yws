@@ -15,6 +15,9 @@ static struct eventq
   struct spinlock qlock;
 } queue;
 
+// ======= WARNING: DO NOT put debug print statments inside critical sections in
+// these functions! This deadlocks this event queue AND the console! ====
+
 void
 initeventq(void)
 {

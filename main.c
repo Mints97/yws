@@ -29,7 +29,7 @@ main(void)
   initeventq();    // NEW: create event queue
   cursorinit();     // NEW: enable mouse
   vgainit();       // NEW: set up VGA palette
-  cursor_action(0, 0, 0, 0, 0); // NEW: set cursor
+  cursor_action(0, 0, 0, 0, 0, 0); // NEW: set cursor
   uartinit();      // serial port
   pinit();         // process table
   tvinit();        // trap vectors

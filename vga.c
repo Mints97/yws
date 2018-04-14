@@ -66,7 +66,7 @@ redraw(int col, int row, uint w, uint h, int fromcursor)
   release(&vgalock);
 
   if(!fromcursor)
-    cursor_action(0, 0, 0, 0, 0); // we might have redrawn over the cursor
+    cursor_action(0, 0, 0, 0, 0, 0); // we might have redrawn over the cursor
 }
 
 void
@@ -109,7 +109,7 @@ draw(int col, int row, const uchar *buf, int onecolor, uint w, uint h, enum draw
   release(&vgalock);
 
   if(dest != DRAWDEST_MAINLAYER && !fromcursor)
-    cursor_action(0, 0, 0, 0, 0); // we might have redrawn over the cursor
+    cursor_action(0, 0, 0, 0, 0, 0); // we might have redrawn over the cursor
 }
 
 void
@@ -143,5 +143,5 @@ draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mas
   release(&vgalock);
 
   if(dest != DRAWDEST_MAINLAYER && !fromcursor)
-    cursor_action(0, 0, 0, 0, 0); // we might have redrawn over the cursor
+    cursor_action(0, 0, 0, 0, 0, 0); // we might have redrawn over the cursor
 }
