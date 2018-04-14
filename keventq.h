@@ -1,1 +1,1 @@
-#define EVENTQSIZE 20
+#define EVENTQSIZE 1000
