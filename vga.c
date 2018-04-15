@@ -133,7 +133,7 @@ draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mas
     for(int ci = 0; ci + coloffset < w && col + ci + coloffset < VGA_SCREEN_WIDTH; ci++){
       int vga_offset = OFFSET(row + ri + rowoffset, col + ci + coloffset, VGA_SCREEN_WIDTH);
       int buf_offset = OFFSET(ri + rowoffset, ci + coloffset, w);
-      if(mask && mask[buf_offset]){
+      if(!mask || mask[buf_offset]){
         target[vga_offset] = buf[buf_offset];
         if(dest == DRAWDEST_BOTH)
           vgamem[vga_offset] = buf[buf_offset];

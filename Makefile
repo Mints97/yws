@@ -180,6 +180,7 @@ UPROGS=\
 	_zombie\
 	_usertests\
 	_ywindowserver\
+	_imgviewer\
 
 fs.img: mkfs README $(AUXFILES) $(UPROGS)
 	./mkfs fs.img README $(AUXFILES) $(UPROGS)

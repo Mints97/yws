@@ -501,3 +501,17 @@ sys_getuserevent(void)
 {
   return deqevent();
 }
+
+int
+sys_getpipesize(void)
+{
+  struct file *f;
+
+  if(argfd(0, 0, &f) < 0)
+    return -1;
+
+  if(f->type != FD_PIPE)
+    return -1;
+
+  return pipegetsize(f->pipe);
+}

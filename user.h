@@ -28,6 +28,7 @@ int draw(uint x, uint y, uchar *imgdata, int onecolor, uint w, uint h, int drawt
 int drawmasked(uint x, uint y, uchar *imgdata, char *mask, uint w, uint h, int drawthrough);
 int redraw(uint x, uint y, uint w, uint h);
 int getuserevent(void);
+int getpipesize(int pipe);
 
 // ulib.c
 int stat(char*, struct stat*);

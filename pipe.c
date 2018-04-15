@@ -118,3 +118,9 @@ piperead(struct pipe *p, char *addr, int n)
   release(&p->lock);
   return i;
 }
+
+int
+pipegetsize(struct pipe *p)
+{
+  return p->nwrite;
+}

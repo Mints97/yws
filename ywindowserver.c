@@ -1,6 +1,8 @@
 #include "types.h"
 #include "user.h"
 #include "vga.h"
+#include "fcntl.h"
+#include "param.h"
 
 enum splittype{
   SPLIT_VERTICAL,   // one left, one right
@@ -27,6 +29,8 @@ struct paneholder{
 
   uchar *display; // if this is not 0, do not split
   int pid;
+  int pipefromproc;
+  int pipetoproc;
 };
 
 static struct paneholder *rootpane;
@@ -163,7 +167,7 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
     return;
 
   // Offset for given window
-  struct paneholder *currpane = window;
+  /*struct paneholder *currpane = window;
 
   while(currpane != rootpane){
     if(currpane == currpane->parent->child2){
@@ -173,7 +177,7 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
         row += currpane->parent->child1dim;
     }
     currpane = currpane->parent;
-  }
+  }*/
   // end offset
 
   int coloffset = 0;
@@ -192,7 +196,7 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
   // Convert regular BMP BGRA data to our custom-indexed web-safe palette
   for(int ri = 0, r = startrow;
       r != endrow
-      && r + rowoffset < h && row + ri + rowoffset < VGA_SCREEN_HEIGHT
+      && r + rowoffset < h && row + ri + rowoffset < VGA_SCREEN_HEIGHT 
       && r + rowoffset >= 0 && row + ri + rowoffset >= 0;
       ri++, r = revrows ? r - 1 : r + 1){
     for(int ci = 0; ci + coloffset < w && col + ci + coloffset < VGA_SCREEN_WIDTH; ci++){
@@ -200,7 +204,7 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
     }
   }
 
-//  draw(col, row, window->display, w, h, 1);
+  drawmasked(col, row, window->display, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, 1);
 //  redraw(col, row, w, h);
 }
 
@@ -218,8 +222,13 @@ splitpane(void)
   activepane->child1->display = activepane->display;
   activepane->child1->pid = activepane->pid;
 
+  activepane->child1->pipefromproc = activepane->pipefromproc;
+  activepane->child1->pipetoproc = activepane->pipetoproc;
+
   activepane->display = (void*)0;
   activepane->pid = -1;
+  activepane->pipefromproc = -1;
+  activepane->pipetoproc = -1;
 
   pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 1); // unselect orig
 
@@ -443,6 +452,8 @@ destroy_activepane(void)
     free(activepane_parent->display);
   activepane_parent->display = otherchild->display;
   activepane_parent->pid = otherchild->pid;
+  activepane_parent->pipefromproc = otherchild->pipefromproc;
+  activepane_parent->pipetoproc = otherchild->pipetoproc;
 
   if(otherchild->split == SPLIT_VERTICAL || otherchild->split == SPLIT_HORIZONTAL){
     otherchild->child1->parent = activepane_parent;
@@ -454,6 +465,72 @@ destroy_activepane(void)
   activepane = (void*)0;
 }
 
+struct paneholder*
+find_pane(struct paneholder *currpane, int pipefromproc)
+{
+  if(currpane->split == SPLIT_VERTICAL || currpane->split == SPLIT_HORIZONTAL){
+    struct paneholder *ch1res = find_pane(currpane->child1, pipefromproc);
+
+    if(ch1res)
+      return ch1res;
+
+    return find_pane(currpane->child2, pipefromproc);
+  }
+  else if(currpane->pipefromproc == pipefromproc)
+    return currpane;
+  else
+    return (void*)0;
+}
+
+int
+make_sh(void)
+{
+  char *argv[] = { "sh", 0 };
+
+  // assumes at least fds 0, 1, 2 are taken
+  int ptoproc[2]; // [1] is write, [0] is read
+  pipe(ptoproc);
+
+  int ptoserv[2];
+  pipe(ptoserv);
+
+  int pid;
+
+  printf(1, "yws: starting sh\n");
+  pid = fork();
+  if(pid < 0){
+    printf(1, "yws: fork failed\n");
+    exit();
+  }
+  if(pid == 0){
+    close(ptoproc[1]);
+    close(ptoserv[0]);
+
+    if(ptoproc[0] > 3){
+      close(3);
+      dup(ptoproc[0]);
+      close(ptoproc[0]);
+    }
+
+    if(ptoproc[1] > 4){
+      close(4);
+    }
+
+    dup(ptoserv[1]);
+
+    // end invariant: read from fd 3, write to fd 4
+    exec("sh", argv);
+    printf(1, "yws: exec sh failed\n");
+    exit();
+  }
+
+  close(ptoproc[0]);
+  close(ptoserv[1]);
+  int toserv = dup(ptoserv[0]);
+  close(ptoserv[0]);
+
+  return toserv; // end invariant: read from returned fd, write to next fd
+}
 
 void
 eventloop(void)
@@ -463,6 +540,17 @@ eventloop(void)
 
   int mousex = 0;
   int mousey = 0;
+
+  int proccomm_toserv[NPROC];
+  int proccomm_toproc[NPROC];
+
+  int npipes = 1;
+
+  int toserv = make_sh();
+  int toproc = toserv + 1;
+
+  proccomm_toserv[0] = toserv;
+  proccomm_toproc[0] = toproc;
 
   while(1){
     int event;
@@ -527,50 +615,112 @@ eventloop(void)
       int ctlheld = event & (1 << 8);
 
       if(activepane){
-        if(!released && ctlheld && key == '\'') // horizontal
-          horizsplit();
-        else if(!released && ctlheld && key == '/') // vertical
-          vertsplit();
-        else if(!released && ctlheld && key == 'd') // close pane
-          destroy_activepane();
+        if(!released && ctlheld){
+          if(key == '\''){ // horizontal
+            horizsplit();
+          }
+          else if(key == '/'){ // vertical
+            vertsplit();
+          }
+          else if(key == 'd'){ // close pane
+            destroy_activepane();
+          }
+          else if(key == 's'){ // make new shell
+            toserv = make_sh();
+            toproc = toserv + 1;
+
+            proccomm_toserv[npipes] = toserv;
+            proccomm_toproc[npipes] = toproc;
+            npipes++;
+          }
+        }
       }
     }
 
-//    printf(1, "Event: %d\n", event);
+    for(int i = 0; i < npipes; i++){
+      char buf[100];
+
+      if(getpipesize(proccomm_toserv[i]) > 0 && read(proccomm_toserv[i], buf, 100) > 0){
+        struct paneholder *targetpane = find_pane(rootpane, proccomm_toserv[i]);
+
+        if(!targetpane){
+          targetpane = activepane;
+          if(activepane->display){
+            free(activepane->display);
+          }
+          //activepane->display = malloc((activepanew - BORDERTHICKNESS * 2) * (activepaneh - BORDERTHICKNESS * 2));
+          activepane->display = malloc(VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT);
+
+
+          // TODO: if a proc was running in activepane, close it!
+        }
+
+        if(buf[7] == ' ')
+          buf[7] = '\0';
+        if(strcmp(buf, "drawbmp") == 0){
+          int fd = open(buf + 8, O_RDONLY);
+
+          if(fd < 0){
+            printf(proccomm_toproc[i], "nack");
+            continue;
+          }
+
+          char imgheader[0x36] = {0};
+
+          read(fd, imgheader, 0x36);
+
+          uint w = ((uint*)(imgheader + 0x12))[0];
+          uint h = ((uint*)(imgheader + 0x16))[0];
+
+          uint *imgdata = malloc(w * h * 4);
+
+          if(read(fd, imgdata, w * h * 4) < 0){
+            printf(proccomm_toproc[i], "nack");
+            continue;
+          }
+
+          draw_bmp(targetpane, 0, 0, imgdata, w, h, 1);
+
+          close(fd);
+          free(imgdata);
+        }
+
+        printf(proccomm_toproc[i], "ack");
+      }
+    }
   }
 }
 
 int
 main(void)
 {
-  char *argv[] = { "sh", 0 };
-  int pid, wpid;
+  int fd;
+
+  // Ensure that three file descriptors are open.
+  while((fd = open("console", O_RDWR)) >= 0){
+    if(fd >= 3){
+      close(fd);
+      break;
+    }
+  }
+
+  int wpid;
 
   printf(1, "Starting up the Y window system server...\n");
-
-  printf(1, "init: starting sh\n");
-  pid = fork();
-  if(pid < 0){
-    printf(1, "init: fork failed\n");
-    exit();
-  }
-  if(pid == 0){
-    exec("sh", argv);
-    printf(1, "init: exec sh failed\n");
-    exit();
-  }
 
   struct paneholder startpane;
   startpane.split = SPLIT_NONE;
   startpane.display = (void*)0;
   startpane.pid = -1;
+  startpane.pipetoproc = -1;
+  startpane.pipefromproc = -1;
 
   rootpane = activepane = &startpane;
   pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select starting pane 
   
   eventloop();
   
-  while((wpid=wait()) >= 0 && wpid != pid)
+  while((wpid = wait()) >= 0 && wpid != getpid())
     printf(1, "zombie!\n");
   exit();
 }

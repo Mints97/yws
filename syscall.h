@@ -25,3 +25,4 @@
 #define SYS_drawmasked 23
 #define SYS_redraw 24
 #define SYS_getuserevent 25
+#define SYS_getpipesize  26

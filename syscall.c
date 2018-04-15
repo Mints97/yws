@@ -103,6 +103,7 @@ extern int sys_draw(void);
 extern int sys_drawmasked(void);
 extern int sys_redraw(void);
 extern int sys_getuserevent(void);
+extern int sys_getpipesize(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -131,6 +132,7 @@ static int (*syscalls[])(void) = {
 [SYS_drawmasked] sys_drawmasked,
 [SYS_redraw]  sys_redraw,
 [SYS_getuserevent] sys_getuserevent,
+[SYS_getpipesize]  sys_getpipesize,
 };
 
 void
