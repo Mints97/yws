@@ -36,6 +36,8 @@ static int activepanex = 0;
 static int activepaney = 0;
 static int activepanew = VGA_SCREEN_WIDTH;
 static int activepaneh = VGA_SCREEN_HEIGHT;
+static int activepane_parentw = VGA_SCREEN_WIDTH;
+static int activepane_parenth = VGA_SCREEN_HEIGHT;
 
 static struct paneholder *selectedsep = (void*)0;
 static int selectedsep_ch1x = 0;
@@ -65,10 +67,17 @@ set_active_pane(int x, int y)
   struct paneholder *currpane = rootpane;
   int currpanex = 0;
   int currpaney = 0;
+
   int currpanew = VGA_SCREEN_WIDTH;
   int currpaneh = VGA_SCREEN_HEIGHT;
 
+  int prevpanew = VGA_SCREEN_WIDTH;
+  int prevpaneh = VGA_SCREEN_HEIGHT;
+
   while(currpane->split != SPLIT_NONE){
+    prevpanew = currpanew;
+    prevpaneh = currpaneh;
+
     if(currpane->split == SPLIT_HORIZONTAL){ // one above, one below
       if(y < currpaney + currpane->child1dim - BORDERTHICKNESS){
         currpaneh = currpane->child1dim;
@@ -129,7 +138,8 @@ set_active_pane(int x, int y)
   selectedsep = (void*)0;
 
   if(currpane != activepane){
-    pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 1); // unselect prev
+    if(activepane)
+      pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 1); // unselect prev
     
     activepane = currpane;
 
@@ -137,6 +147,10 @@ set_active_pane(int x, int y)
     activepaney = currpaney;
     activepanew = currpanew;
     activepaneh = currpaneh;
+    
+    activepane_parentw = prevpanew;
+    activepane_parenth = prevpaneh;
+
     pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select curr
   }
 }
@@ -374,10 +388,70 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
         }
       }
     }
-
   }
 
   pane_visual_select(panex + dimchangex, paney + dimchangey, panew - dimchangex, paneh - dimchangey, unselect); // select curr
+}
+
+
+void
+destroy_activepane(void)
+{
+  if(activepane == rootpane)
+    return;
+
+  if(activepane->pid != -1){
+    kill(activepane->pid);
+  }
+
+  struct paneholder *activepane_parent = activepane->parent;
+  struct paneholder *otherchild; 
+
+  if(activepane == activepane_parent->child2){
+    otherchild = activepane_parent->child1;
+
+    if(activepane_parent->split == SPLIT_VERTICAL){
+      int otherchildw = activepane_parent->child1dim;
+      resize_pane(otherchild, activepanex - otherchildw, activepaney, otherchildw, activepaneh, activepanew, 0);
+    }
+    else if(activepane_parent->split == SPLIT_HORIZONTAL){
+      int otherchildh = activepane_parent->child1dim;
+      resize_pane(otherchild, activepanex, activepaney - otherchildh, activepanew, otherchildh, 0, activepaneh);
+    }
+  }
+  else{
+    otherchild = activepane_parent->child2;
+
+    if(activepane_parent->split == SPLIT_VERTICAL){
+      int otherchildw = activepane_parentw - activepanew;
+      move_pane(otherchild, activepanex + activepanew, activepaney, otherchildw, activepaneh, -activepanew, 0);
+    }
+    else if(activepane_parent->split == SPLIT_HORIZONTAL){
+      int otherchildh = activepane_parenth - activepaneh;
+      move_pane(otherchild, activepanex, activepaney + activepaneh, activepanew, otherchildh, 0, -activepaneh);
+    }
+  }
+
+  // Clone (lul)
+  activepane_parent->split = otherchild->split;
+  activepane_parent->child1 = otherchild->child1;
+  activepane_parent->child2 = otherchild->child2;
+  free(activepane_parent->separator);
+  activepane_parent->separator = otherchild->separator;
+  activepane_parent->child1dim = otherchild->child1dim;
+  if(activepane_parent->display)
+    free(activepane_parent->display);
+  activepane_parent->display = otherchild->display;
+  activepane_parent->pid = otherchild->pid;
+
+  if(otherchild->split == SPLIT_VERTICAL || otherchild->split == SPLIT_HORIZONTAL){
+    otherchild->child1->parent = activepane_parent;
+    otherchild->child2->parent = activepane_parent;
+  }
+
+  free(activepane);
+
+  activepane = (void*)0;
 }
 
 
@@ -452,10 +526,14 @@ eventloop(void)
       //int shiftheld = event & (1 << 9);
       int ctlheld = event & (1 << 8);
 
-      if(!released && ctlheld && key == '\'') // horizontal
-        horizsplit();
-      else if(!released && ctlheld && key == '/') // vertical
-        vertsplit();
+      if(activepane){
+        if(!released && ctlheld && key == '\'') // horizontal
+          horizsplit();
+        else if(!released && ctlheld && key == '/') // vertical
+          vertsplit();
+        else if(!released && ctlheld && key == 'd') // close pane
+          destroy_activepane();
+      }
     }
 
 //    printf(1, "Event: %d\n", event);
@@ -485,6 +563,7 @@ main(void)
   struct paneholder startpane;
   startpane.split = SPLIT_NONE;
   startpane.display = (void*)0;
+  startpane.pid = -1;
 
   rootpane = activepane = &startpane;
   pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select starting pane 
