@@ -345,7 +345,7 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
 
 void
 move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
-    int dimchangex, int dimchangey) // left or top border change, shift up or down
+    int dimchangex, int dimchangey, int compress) // left or top border change, shift up or down
 {
   int unselect = 1;
 
@@ -360,64 +360,80 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
     activepanex = panex + dimchangex;
     activepaney = paney + dimchangey;
 
-    activepanew = panew - dimchangex;
-    activepaneh = paneh - dimchangey;
+    activepanew = compress ? panew - dimchangex : panew;
+    activepaneh = compress ? paneh - dimchangey : paneh;
   }
 
   if(dimchangex){
     if(pane->split == SPLIT_VERTICAL){
-      pane->child1dim += dimchangex;
-      move_pane(pane->child1, panex, paney, pane->child1dim - dimchangex, paneh,
-          dimchangex, 0);
+      move_pane(pane->child1, panex, paney, pane->child1dim, paneh,
+          dimchangex, 0,
+          0);
+      move_pane(pane->child2, panex + pane->child1dim, paney, panew - pane->child1dim, paneh,
+          dimchangex, 0,
+          compress);
     }
     else if(pane->split == SPLIT_HORIZONTAL){
       move_pane(pane->child1, panex, paney, panew, pane->child1dim,
-          dimchangex, 0);
+          dimchangex, 0,
+          1);
       move_pane(pane->child2, panex, paney + pane->child1dim, panew, paneh - pane->child1dim,
-          dimchangex, 0);
+          dimchangex, 0,
+          1);
     }
     else if(pane->split == SPLIT_NONE){
       if(pane->display){
         draw(panex + dimchangex + BORDERTHICKNESS, paney + BORDERTHICKNESS,
             pane->display, 0, VGA_SCREEN_WIDTH,
-            panew - dimchangex - 2 * BORDERTHICKNESS, paneh - 2 * BORDERTHICKNESS, 1);
+            panew - (compress ? dimchangex : 0) - 2 * BORDERTHICKNESS, paneh - 2 * BORDERTHICKNESS, 1);
       }
       else{
+        uchar color = 0x00; // black bg
         if(dimchangex < 0){
-          uchar color = 0x00; // black bg
           draw(panex + dimchangex, paney, &color, 1, 0, -dimchangex + BORDERTHICKNESS, paneh, 1);
+        }
+        else if(dimchangex > 0 && !compress){
+          draw(panex + panew - BORDERTHICKNESS, paney, &color, 1, 0, dimchangex, paneh, 1);
         }
       }
     }
   }
   else if(dimchangey){
     if(pane->split == SPLIT_HORIZONTAL){
-      pane->child1dim += dimchangey;
-      move_pane(pane->child1, panex, paney, panew, pane->child1dim - dimchangey,
-          0, dimchangey);
+      move_pane(pane->child1, panex, paney, panew, pane->child1dim,
+          0, dimchangey,
+          0);
+      move_pane(pane->child2, panex, paney + pane->child1dim, panew, paneh - pane->child1dim,
+          0, dimchangey,
+          compress);
     }
     else if(pane->split == SPLIT_VERTICAL){
       move_pane(pane->child1, panex, paney, pane->child1dim, paneh,
-          0, dimchangey);
+          0, dimchangey,
+          1);
       move_pane(pane->child2, panex + pane->child1dim, paney, panew - pane->child1dim, paneh,
-          0, dimchangey);
+          0, dimchangey,
+          1);
     }
     else if(pane->split == SPLIT_NONE){
       if(pane->display){
         draw(panex + BORDERTHICKNESS, paney + dimchangey + BORDERTHICKNESS,
             pane->display, 0, VGA_SCREEN_WIDTH,
-            panew - 2 * BORDERTHICKNESS, paneh - dimchangey - 2 * BORDERTHICKNESS, 1);
+            panew - 2 * BORDERTHICKNESS, paneh - (compress ? dimchangey : 0) - 2 * BORDERTHICKNESS, 1);
       }
       else{
+        uchar color = 0x00; // black bg
         if(dimchangey < 0){
-          uchar color = 0x00; // black bg
           draw(panex, paney + dimchangey, &color, 1, 0, panew, -dimchangey + BORDERTHICKNESS, 1);
+        }
+        else if(dimchangey > 0 && !compress){
+          draw(panex, paney + paneh - BORDERTHICKNESS, &color, 1, 0, panew, dimchangey, 1);
         }
       }
     }
   }
 
-  pane_visual_select(panex + dimchangex, paney + dimchangey, panew - dimchangex, paneh - dimchangey, unselect); // select curr
+  pane_visual_select(panex + dimchangex, paney + dimchangey, compress ? panew - dimchangex : panew, compress ? paneh - dimchangey : paneh, unselect); // select curr
 }
 
 
@@ -451,11 +467,11 @@ destroy_activepane(void)
 
     if(activepane_parent->split == SPLIT_VERTICAL){
       int otherchildw = activepane_parentw - activepanew;
-      move_pane(otherchild, activepanex + activepanew, activepaney, otherchildw, activepaneh, -activepanew, 0);
+      move_pane(otherchild, activepanex + activepanew, activepaney, otherchildw, activepaneh, -activepanew, 0, 1);
     }
     else if(activepane_parent->split == SPLIT_HORIZONTAL){
       int otherchildh = activepane_parenth - activepaneh;
-      move_pane(otherchild, activepanex, activepaney + activepaneh, activepanew, otherchildh, 0, -activepaneh);
+      move_pane(otherchild, activepanex, activepaney + activepaneh, activepanew, otherchildh, 0, -activepaneh, 1);
     }
   }
 
@@ -699,31 +715,39 @@ eventloop(void)
         if(selectedsep){ // we've clicked a separator and haven't released yet
           if(selectedsep->split == SPLIT_VSEPARATOR){
             int dx = mousex - prevmousex;
-            resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
-                dx, 0);
-            move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
-                dx, 0);
 
-            selectedsep_ch1w += dx;
-            selectedsep_ch2w -= dx;
-            selectedsep->parent->child1dim += dx;
-            selectedsep_ch2x += dx;
+            if((dx < 0 && selectedsep_ch1w > 2 * BORDERTHICKNESS) || (dx > 0 && selectedsep_ch2w > 2 * BORDERTHICKNESS)){
+              resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
+                  dx, 0);
+              move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
+                  dx, 0,
+                  1);
 
-            pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+              selectedsep_ch1w += dx;
+              selectedsep_ch2w -= dx;
+              selectedsep->parent->child1dim += dx;
+              selectedsep_ch2x += dx;
+
+              pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+            }
           }
           else if(selectedsep->split == SPLIT_HSEPARATOR){
             int dy = mousey - prevmousey;
-            resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
-                0, dy);
-            move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
-                0, dy);
 
-            selectedsep_ch1h += dy;
-            selectedsep_ch2h -= dy;
-            selectedsep->parent->child1dim += dy;
-            selectedsep_ch2y += dy;
+            if((dy < 0 && selectedsep_ch1h > 2 * BORDERTHICKNESS) || (dy > 0 && selectedsep_ch2h > 2 * BORDERTHICKNESS)){
+              resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
+                  0, dy);
+              move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
+                  0, dy,
+                  1);
 
-            pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+              selectedsep_ch1h += dy;
+              selectedsep_ch2h -= dy;
+              selectedsep->parent->child1dim += dy;
+              selectedsep_ch2y += dy;
+
+              pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+            }
           }
         }
         else{
