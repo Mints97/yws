@@ -578,71 +578,78 @@ proccomm(int *proccomm_toserv, int *proccomm_toproc, int npipes)
   for(int i = 0; i < npipes; i++){
     char buf[100];
 
-    if(getpipesize(proccomm_toserv[i]) > 0 && read(proccomm_toserv[i], buf, 100) > 0){
-      printf(1, "Read data from proc!\n");
-      struct paneholder *targetpane = find_pane(rootpane, 0, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, proccomm_toserv[i]);
+    if(getpipesize(proccomm_toserv[i]) > 0){
+      int nread = read(proccomm_toserv[i], buf, 100);
 
-      if(!targetpane){
-        targetpane = activepane;
-        if(activepane->display){
-          free(activepane->display);
-        }
-        
-        activepane->display = malloc(VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT);
-        memset(activepane->display, 0x00, VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT); // set bg color, maybe proc should be able to set it?
-        targetpanew = activepanew;
-        targetpaneh = activepaneh;
-        targetpanex = activepanex;
-        targetpaney = activepaney;
+      if(nread > 0){
+        struct paneholder *targetpane = find_pane(rootpane, 0, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, proccomm_toserv[i]);
 
-        if(activepane->pid != -1)
-          kill(activepane->pid);
-      }
+        if(!targetpane){
+          targetpane = activepane;
+          if(activepane->display){
+            free(activepane->display);
+          }
+          
+          activepane->display = malloc(VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT);
+          memset(activepane->display, 0x00, VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT); // set bg color, maybe proc should be able to set it?
+          targetpanew = activepanew;
+          targetpaneh = activepaneh;
+          targetpanex = activepanex;
+          targetpaney = activepaney;
 
-      if(buf[7] == ' ')
-        buf[7] = '\0';
-      if(strcmp(buf, "drawbmp") == 0){
-        int fd = open(buf + 8, O_RDONLY);
-
-        if(fd < 0){
-          printf(proccomm_toproc[i], "nack");
-          close(fd);
-          continue;
+          if(activepane->pid != -1)
+            kill(activepane->pid);
         }
 
-        char imgheader[0x36] = {0};
+        buf[nread] = '\0';
 
-        read(fd, imgheader, 0x36);
+        if(buf[7] == ' ')
+          buf[7] = '\0';
+        if(strcmp(buf, "drawbmp") == 0){
+          int fd = open(buf + 8, O_RDONLY);
 
-        uint w = ((uint*)(imgheader + 0x12))[0];
-        uint h = ((uint*)(imgheader + 0x16))[0];
+          if(fd < 0){
+            printf(1, "Failed to open file %s\n", buf + 8);
+            printf(proccomm_toproc[i], "nack");
+            close(fd);
+            continue;
+          }
 
-        uint *imgdata = malloc(w * h * 4);
-        printf(1, "reading image...\n");
+          char imgheader[0x36] = {0};
 
-        if(read(fd, imgdata, w * h * 4) < 0){
-          printf(proccomm_toproc[i], "nack");
+          read(fd, imgheader, 0x36);
+
+          uint w = ((uint*)(imgheader + 0x12))[0];
+          uint h = ((uint*)(imgheader + 0x16))[0];
+
+          uint *imgdata = malloc(w * h * 4);
+          //printf(1, "reading image...\n");
+
+          if(read(fd, imgdata, w * h * 4) < 0){
+            printf(1, "Failed to read file %s\n", buf + 8);
+            printf(proccomm_toproc[i], "nack");
+            close(fd);
+            free(imgdata);
+            continue;
+          }
+
+          //printf(1, "read image!\n");
+
+          draw_bmp(targetpane, 0, 0, imgdata, w, h, 1);
+
+          draw(targetpanex + BORDERTHICKNESS, targetpaney + BORDERTHICKNESS, targetpane->display, 0,
+              VGA_SCREEN_WIDTH,
+              w > targetpanew - 2 * BORDERTHICKNESS ? targetpanew - 2 * BORDERTHICKNESS : w,
+              h > targetpaneh - 2 * BORDERTHICKNESS ? targetpaneh - 2 * BORDERTHICKNESS : h, 1);
+
           close(fd);
           free(imgdata);
-          continue;
+
+          return 0;
         }
 
-        printf(1, "read image!\n");
-
-        draw_bmp(targetpane, 0, 0, imgdata, w, h, 1);
-
-        draw(targetpanex + BORDERTHICKNESS, targetpaney + BORDERTHICKNESS, targetpane->display, 0,
-            VGA_SCREEN_WIDTH,
-            w > targetpanew - 2 * BORDERTHICKNESS ? targetpanew - 2 * BORDERTHICKNESS : w,
-            h > targetpaneh - 2 * BORDERTHICKNESS ? targetpaneh - 2 * BORDERTHICKNESS : h, 1);
-
-        close(fd);
-        free(imgdata);
-
-        return 0;
+        printf(proccomm_toproc[i], "ack");
       }
-
-      printf(proccomm_toproc[i], "ack");
     }
   }
 
