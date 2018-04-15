@@ -55,8 +55,8 @@ redraw(int col, int row, uint w, uint h, int fromcursor)
   if(row < 0)
     rowoffset = -row;
 
-  if(col + coloffset + w >= VGA_SCREEN_WIDTH)
-    w = VGA_SCREEN_WIDTH - col - coloffset;
+  if(col + coloffset + w > VGA_SCREEN_WIDTH)
+    w = VGA_SCREEN_WIDTH - (col + coloffset);
 
   acquire(&vgalock);
   for(int ri = 0; ri + rowoffset < h && row + ri + rowoffset < VGA_SCREEN_HEIGHT; ri++){

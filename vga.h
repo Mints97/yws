@@ -1,5 +1,5 @@
 #define VGA_SCREEN_WIDTH 320
-#define VGA_SCREEN_HEIGHT 200
+#define VGA_SCREEN_HEIGHT 190 // it SHOULD be 200, but for some reason stuff on the lowest rows keeps clipping in QEMU
 
 #define NREDVALS 6
 #define NGREENVALS 6

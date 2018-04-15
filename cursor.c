@@ -4,7 +4,7 @@
 #include "spinlock.h"
 
 #define CURSOR_WIDTH 12
-#define CURSOR_HEIGHT 19
+#define CURSOR_HEIGHT 18
 
 static const unsigned char cursor[CURSOR_WIDTH * CURSOR_HEIGHT] = {
   0x00, 0x00, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7, 0xd7,
