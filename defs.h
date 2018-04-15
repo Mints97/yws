@@ -84,7 +84,7 @@ void            cursorinit(void);
 // vga.c
 void            vgainit(void);
 void            redraw(int col, int row, uint w, uint h, int fromcursor);
-void            draw(int col, int row, const unsigned char *buf, int onecolor, uint w, uint h, enum drawdest dest, int fromcursor);
+void            draw(int col, int row, const unsigned char *buf, int onecolor, uint dimw, uint w, uint h, enum drawdest dest, int fromcursor);
 void            draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, enum drawdest dest, int fromcursor);
 
 // keventq.c

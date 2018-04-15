@@ -59,8 +59,8 @@ redraw(int col, int row, uint w, uint h, int fromcursor)
     w = VGA_SCREEN_WIDTH - col - coloffset;
 
   acquire(&vgalock);
-  for(int r = row; r + rowoffset < row + h && r + rowoffset < VGA_SCREEN_HEIGHT; r++){
-    int offset = OFFSET(r + rowoffset, col + coloffset, VGA_SCREEN_WIDTH);
+  for(int ri = 0; ri + rowoffset < h && row + ri + rowoffset < VGA_SCREEN_HEIGHT; ri++){
+    int offset = OFFSET(row + ri + rowoffset, col + coloffset, VGA_SCREEN_WIDTH);
     memmove(vgamem + offset, vgamainlayer + offset, w);
   }
   release(&vgalock);
@@ -70,7 +70,7 @@ redraw(int col, int row, uint w, uint h, int fromcursor)
 }
 
 void
-draw(int col, int row, const uchar *buf, int onecolor, uint w, uint h, enum drawdest dest, int fromcursor)
+draw(int col, int row, const uchar *buf, int onecolor, uint dimw, uint w, uint h, enum drawdest dest, int fromcursor)
 {
   int coloffset = 0;
   int rowoffset = 0;
@@ -99,7 +99,7 @@ draw(int col, int row, const uchar *buf, int onecolor, uint w, uint h, enum draw
         memset(vgamem + target_offset, *buf, width);
     }
     else{
-      const uchar *data_source = buf + OFFSET(ri + rowoffset, coloffset, w);
+      const uchar *data_source = buf + OFFSET(ri + rowoffset, coloffset, dimw);
      
       memmove(target + target_offset, data_source, width);
       if(dest == DRAWDEST_BOTH)
@@ -142,6 +142,6 @@ draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mas
   }
   release(&vgalock);
 
-  if(dest != DRAWDEST_MAINLAYER && !fromcursor)
+  if(!fromcursor)
     cursor_action(0, 0, 0, 0, 0, 0); // we might have redrawn over the cursor
 }

@@ -59,10 +59,10 @@ pane_visual_select(int x, int y, int w, int h, int unselect)
 {
   uchar color = unselect ? 0xd7 : 0x18; // white or blue
 
-  draw(x, y, &color, 1, w, BORDERTHICKNESS, 1); // top border
-  draw(x, y, &color, 1, BORDERTHICKNESS, h, 1); // left border
-  draw(x + w - BORDERTHICKNESS, y, &color, 1, BORDERTHICKNESS, h, 1); // right border
-  draw(x, y + h - BORDERTHICKNESS, &color, 1, w, BORDERTHICKNESS, 1); // bottom border
+  draw(x, y, &color, 1, 0, w, BORDERTHICKNESS, 1); // top border
+  draw(x, y, &color, 1, 0, BORDERTHICKNESS, h, 1); // left border
+  draw(x + w - BORDERTHICKNESS, y, &color, 1, 0, BORDERTHICKNESS, h, 1); // right border
+  draw(x, y + h - BORDERTHICKNESS, &color, 1, 0, w, BORDERTHICKNESS, 1); // bottom border
 }
 
 void
@@ -203,9 +203,6 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
       window->display[OFFSET(row + ri, col + ci, VGA_SCREEN_WIDTH)] = BGRATOC(bmp_buf[OFFSET(r, ci, w)]);
     }
   }
-
-  drawmasked(col, row, window->display, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, 1);
-//  redraw(col, row, w, h);
 }
 
 void
@@ -221,6 +218,10 @@ splitpane(void)
 
   activepane->child1->display = activepane->display;
   activepane->child1->pid = activepane->pid;
+  activepane->child2->display = (void*)0;
+  activepane->child2->pid = -1;
+  activepane->child2->pipefromproc = -1;
+  activepane->child2->pipetoproc = -1;
 
   activepane->child1->pipefromproc = activepane->pipefromproc;
   activepane->child1->pipetoproc = activepane->pipetoproc;
@@ -238,6 +239,10 @@ splitpane(void)
 void
 vertsplit(void)
 {
+  uchar color = 0x00; // black bg
+  draw(activepanex + activepanew / 2 + BORDERTHICKNESS, activepaney, &color, 1, 0,
+      activepanew - activepanew / 2 - 2 * BORDERTHICKNESS, activepaneh, 1);
+  
   activepane->split = SPLIT_VERTICAL;
   activepane->child1dim = activepanew / 2;
   splitpane();
@@ -251,6 +256,10 @@ vertsplit(void)
 void
 horizsplit(void)
 {
+  uchar color = 0x00; // black bg
+  draw(activepanex, activepaney + activepaneh / 2 + BORDERTHICKNESS, &color, 1, 0,
+      activepanew, activepaneh - activepaneh / 2 - 2 * BORDERTHICKNESS, 1);
+
   activepane->split = SPLIT_HORIZONTAL;
   activepane->child1dim = activepaneh / 2;
   splitpane();
@@ -291,12 +300,16 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
     }
     else if(pane->split == SPLIT_NONE){
       // TODO: resize contained image, if any
-      if(pane->display){
-      }
-      else{
-        if(dimchangex > 0){
+      if(dimchangex > 0){
+        if(pane->display){
+          draw(panex + panew - BORDERTHICKNESS, paney + BORDERTHICKNESS,
+              pane->display + OFFSET(0, panew - 2 * BORDERTHICKNESS, VGA_SCREEN_WIDTH),
+              0, VGA_SCREEN_WIDTH,
+              dimchangex, paneh - 2 * BORDERTHICKNESS, 1);
+        }
+        else{
           uchar color = 0x00; // black bg
-          draw(panex + panew - BORDERTHICKNESS, paney, &color, 1, dimchangex, paneh, 1);
+          draw(panex + panew - BORDERTHICKNESS, paney, &color, 1, 0, dimchangex, paneh, 1);
         }
       }
     }
@@ -313,13 +326,16 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
           0, dimchangey);
     }
     else if(pane->split == SPLIT_NONE){
-      // TODO: resize contained image, if any
-      if(pane->display){
-      }
-      else{
-        if(dimchangey > 0){
+      if(dimchangey > 0){
+        if(pane->display){
+          draw(panex + BORDERTHICKNESS, paney + paneh - BORDERTHICKNESS,
+              pane->display + OFFSET(paneh - 2 * BORDERTHICKNESS, 0, VGA_SCREEN_WIDTH),
+              0, VGA_SCREEN_WIDTH,
+              panew - 2 * BORDERTHICKNESS, dimchangey, 1);
+        }
+        else{
           uchar color = 0x00; // black bg
-          draw(panex, paney + paneh - BORDERTHICKNESS, &color, 1, panew, dimchangey, 1);
+          draw(panex, paney + paneh - BORDERTHICKNESS, &color, 1, 0, panew, dimchangey, 1);
         }
       }
     }
@@ -363,13 +379,15 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
           dimchangex, 0);
     }
     else if(pane->split == SPLIT_NONE){
-      // TODO: move contained image, if any
       if(pane->display){
+        draw(panex + dimchangex + BORDERTHICKNESS, paney + BORDERTHICKNESS,
+            pane->display, 0, VGA_SCREEN_WIDTH,
+            panew - dimchangex - 2 * BORDERTHICKNESS, paneh - 2 * BORDERTHICKNESS, 1);
       }
       else{
         if(dimchangex < 0){
           uchar color = 0x00; // black bg
-          draw(panex + dimchangex, paney, &color, 1, -dimchangex + BORDERTHICKNESS, paneh, 1);
+          draw(panex + dimchangex, paney, &color, 1, 0, -dimchangex + BORDERTHICKNESS, paneh, 1);
         }
       }
     }
@@ -387,13 +405,15 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
           0, dimchangey);
     }
     else if(pane->split == SPLIT_NONE){
-      // TODO: move contained image, if any
       if(pane->display){
+        draw(panex + BORDERTHICKNESS, paney + dimchangey + BORDERTHICKNESS,
+            pane->display, 0, VGA_SCREEN_WIDTH,
+            panew - 2 * BORDERTHICKNESS, paneh - dimchangey - 2 * BORDERTHICKNESS, 1);
       }
       else{
         if(dimchangey < 0){
           uchar color = 0x00; // black bg
-          draw(panex, paney + dimchangey, &color, 1, panew, -dimchangey + BORDERTHICKNESS, 1);
+          draw(panex, paney + dimchangey, &color, 1, 0, panew, -dimchangey + BORDERTHICKNESS, 1);
         }
       }
     }
@@ -465,19 +485,41 @@ destroy_activepane(void)
   activepane = (void*)0;
 }
 
+static int targetpanex = 0;
+static int targetpaney = 0;
+static int targetpanew = VGA_SCREEN_WIDTH;
+static int targetpaneh = VGA_SCREEN_HEIGHT;
+
 struct paneholder*
-find_pane(struct paneholder *currpane, int pipefromproc)
+find_pane(struct paneholder *currpane, int currpanex, int currpaney, int currpanew, int currpaneh, int pipefromproc)
 {
   if(currpane->split == SPLIT_VERTICAL || currpane->split == SPLIT_HORIZONTAL){
-    struct paneholder *ch1res = find_pane(currpane->child1, pipefromproc);
+    struct paneholder *ch1res;
+
+    if(currpane->split == SPLIT_VERTICAL){
+      ch1res = find_pane(currpane->child1, currpanex, currpaney, currpane->child1dim, currpaneh, pipefromproc);
+    }
+    else{ // HORIZONTAL
+      ch1res = find_pane(currpane->child1, currpanex, currpaney, currpanew, currpane->child1dim, pipefromproc);
+    }
 
     if(ch1res)
       return ch1res;
 
-    return find_pane(currpane->child2, pipefromproc);
+    if(currpane->split == SPLIT_VERTICAL){
+      return find_pane(currpane->child2, currpanex + currpane->child1dim, currpaney, currpanew - currpane->child1dim, currpaneh, pipefromproc);
+    }
+    else{ // HORIZONTAL
+      return find_pane(currpane->child2, currpanex, currpaney + currpane->child1dim, currpanew, currpaneh - currpane->child1dim, pipefromproc);
+    }
   }
-  else if(currpane->pipefromproc == pipefromproc)
+  else if(currpane->pipefromproc == pipefromproc){
+    targetpanex = currpanex;
+    targetpaney = currpaney;
+    targetpanew = currpanew;
+    targetpaneh = currpaneh;
     return currpane;
+  }
   else
     return (void*)0;
 }
@@ -619,13 +661,13 @@ eventloop(void)
           if(key == '\''){ // horizontal
             horizsplit();
           }
-          else if(key == '/'){ // vertical
+          else if(key == ','){ // vertical
             vertsplit();
           }
-          else if(key == 'd'){ // close pane
+          else if(key == '-'){ // close pane
             destroy_activepane();
           }
-          else if(key == 's'){ // make new shell
+          else if(key == '='){ // make new shell
             toserv = make_sh();
             toproc = toserv + 1;
 
@@ -641,15 +683,19 @@ eventloop(void)
       char buf[100];
 
       if(getpipesize(proccomm_toserv[i]) > 0 && read(proccomm_toserv[i], buf, 100) > 0){
-        struct paneholder *targetpane = find_pane(rootpane, proccomm_toserv[i]);
+        struct paneholder *targetpane = find_pane(rootpane, 0, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, proccomm_toserv[i]);
 
         if(!targetpane){
           targetpane = activepane;
           if(activepane->display){
             free(activepane->display);
           }
-          //activepane->display = malloc((activepanew - BORDERTHICKNESS * 2) * (activepaneh - BORDERTHICKNESS * 2));
+          
           activepane->display = malloc(VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT);
+          targetpanew = activepanew;
+          targetpaneh = activepaneh;
+          targetpanex = activepanex;
+          targetpaney = activepaney;
 
 
           // TODO: if a proc was running in activepane, close it!
@@ -680,6 +726,11 @@ eventloop(void)
           }
 
           draw_bmp(targetpane, 0, 0, imgdata, w, h, 1);
+
+          draw(targetpanex + BORDERTHICKNESS, targetpaney + BORDERTHICKNESS, targetpane->display, 0,
+              VGA_SCREEN_WIDTH,
+              w > targetpanew - 2 * BORDERTHICKNESS ? targetpanew - 2 * BORDERTHICKNESS : w,
+              h > targetpaneh - 2 * BORDERTHICKNESS ? targetpaneh - 2 * BORDERTHICKNESS : h, 1);
 
           close(fd);
           free(imgdata);

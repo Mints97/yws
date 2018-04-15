@@ -122,5 +122,5 @@ piperead(struct pipe *p, char *addr, int n)
 int
 pipegetsize(struct pipe *p)
 {
-  return p->nwrite;
+  return p->nwrite - p->nread;
 }

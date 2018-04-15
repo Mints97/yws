@@ -446,17 +446,18 @@ sys_pipe(void)
 int
 sys_draw(void)
 {
-  int x, y, w, h, onecolor, drawthrough;
+  int x, y, w, dimw, h, onecolor, drawthrough;
   char *imgdata;
 
   if(argint(0, &x) < 0 || argint(1, &y) < 0
-      || argint(2, &onecolor) < 0
-      || argint(4, &w) < 0 || argint(5, &h) < 0
+      || argint(3, &onecolor) < 0
+      || argint(4, &dimw) < 0
+      || argint(5, &w) < 0 || argint(6, &h) < 0
       || argptr(2, &imgdata, onecolor ? 1 : x * y) < 0
-      || argint(6, &drawthrough) < 0)
+      || argint(7, &drawthrough) < 0)
     return -1;
 
-  draw((uint)x, (uint)y, (uchar*)imgdata, onecolor, (uint)w, (uint)h,
+  draw((uint)x, (uint)y, (uchar*)imgdata, onecolor, (uint)dimw, (uint)w, (uint)h,
       drawthrough ? DRAWDEST_BOTH : DRAWDEST_MAINLAYER, 0);
   //redraw((uint)x, (uint)y, (uint)w, (uint)h);
 
