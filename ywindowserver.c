@@ -54,6 +54,9 @@ static int selectedsep_ch2y = 0;
 static int selectedsep_ch2w = VGA_SCREEN_WIDTH;
 static int selectedsep_ch2h = VGA_SCREEN_HEIGHT;
 
+static int selectedsep_ch1_closestsepx = 0;
+static int selectedsep_ch1_closestsepy = 0;
+
 void
 pane_visual_select(int x, int y, int w, int h, int unselect)
 {
@@ -63,6 +66,39 @@ pane_visual_select(int x, int y, int w, int h, int unselect)
   draw(x, y, &color, 1, 0, BORDERTHICKNESS, h, 1); // left border
   draw(x + w - BORDERTHICKNESS, y, &color, 1, 0, BORDERTHICKNESS, h, 1); // right border
   draw(x, y + h - BORDERTHICKNESS, &color, 1, 0, w, BORDERTHICKNESS, 1); // bottom border
+}
+
+void
+find_closest_sep(struct paneholder *currpane, int currpanex, int currpaney, int currpanew, int currpaneh, enum splittype type)
+{
+  if(currpane->split == SPLIT_VERTICAL || currpane->split == SPLIT_HORIZONTAL){
+    if(currpane->separator->split == type){
+      int curr_selectedsep_ch1_closestsepx = currpane->split == SPLIT_VERTICAL ? currpanex + currpane->child1dim : currpanex;
+      int curr_selectedsep_ch1_closestsepy = currpane->split == SPLIT_HORIZONTAL ? currpaney + currpane->child1dim : currpaney;
+
+      if(curr_selectedsep_ch1_closestsepx > selectedsep_ch1_closestsepx)
+        selectedsep_ch1_closestsepx = curr_selectedsep_ch1_closestsepx;
+
+      if(curr_selectedsep_ch1_closestsepy > selectedsep_ch1_closestsepy)
+        selectedsep_ch1_closestsepy = curr_selectedsep_ch1_closestsepy;
+    }
+
+    if(currpane->split == SPLIT_VERTICAL){
+      find_closest_sep(currpane->child1, currpanex, currpaney, currpane->child1dim, currpaneh, type);
+    }
+    else{ // HORIZONTAL
+      find_closest_sep(currpane->child1, currpanex, currpaney, currpanew, currpane->child1dim, type);
+    }
+
+    if(currpane->split == SPLIT_VERTICAL){
+      find_closest_sep(currpane->child2, currpanex + currpane->child1dim, currpaney, currpanew - currpane->child1dim, currpaneh, type);
+      return;
+    }
+    else{ // HORIZONTAL
+      find_closest_sep(currpane->child2, currpanex, currpaney + currpane->child1dim, currpanew, currpaneh - currpane->child1dim, type);
+      return;
+    }
+  }
 }
 
 void
@@ -105,6 +141,7 @@ set_active_pane(int x, int y)
         selectedsep_ch2w = currpanew;
         selectedsep_ch2h = currpaneh - currpane->child1dim;
 
+        find_closest_sep(currpane->child1, currpanex, currpaney, currpanew, currpane->child1dim, selectedsep->split);
         return;
       }
     }
@@ -131,6 +168,7 @@ set_active_pane(int x, int y)
         selectedsep_ch2w = currpanew - currpane->child1dim;
         selectedsep_ch2h = currpaneh;
 
+        find_closest_sep(currpane->child1, currpanex, currpaney, currpane->child1dim, currpaneh, selectedsep->split);
         return;
       }
     }
@@ -165,20 +203,6 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
 {
   if(window->split != SPLIT_NONE)
     return;
-
-  // Offset for given window
-  /*struct paneholder *currpane = window;
-
-  while(currpane != rootpane){
-    if(currpane == currpane->parent->child2){
-      if(currpane->parent->split == SPLIT_VERTICAL)
-        col += currpane->parent->child1dim;
-      else if(currpane->parent->split == SPLIT_HORIZONTAL)
-        row += currpane->parent->child1dim;
-    }
-    currpane = currpane->parent;
-  }*/
-  // end offset
 
   int coloffset = 0;
   int rowoffset = 0;
@@ -716,7 +740,8 @@ eventloop(void)
           if(selectedsep->split == SPLIT_VSEPARATOR){
             int dx = mousex - prevmousex;
 
-            if((dx < 0 && selectedsep_ch1w > 2 * BORDERTHICKNESS) || (dx > 0 && selectedsep_ch2w > 2 * BORDERTHICKNESS)){
+            if((dx < 0 && selectedsep_ch1w > 2 * BORDERTHICKNESS && selectedsep_ch2x - 2 * BORDERTHICKNESS > selectedsep_ch1_closestsepx)
+                || (dx > 0 && selectedsep_ch2w > 2 * BORDERTHICKNESS)){
               resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
                   dx, 0);
               move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
@@ -733,8 +758,9 @@ eventloop(void)
           }
           else if(selectedsep->split == SPLIT_HSEPARATOR){
             int dy = mousey - prevmousey;
-
-            if((dy < 0 && selectedsep_ch1h > 2 * BORDERTHICKNESS) || (dy > 0 && selectedsep_ch2h > 2 * BORDERTHICKNESS)){
+          
+            if((dy < 0 && selectedsep_ch1h > 2 * BORDERTHICKNESS && selectedsep_ch2y - 2 * BORDERTHICKNESS > selectedsep_ch1_closestsepy)
+                || (dy > 0 && selectedsep_ch2h > 2 * BORDERTHICKNESS)){
               resize_pane(selectedsep->parent->child1, selectedsep_ch1x, selectedsep_ch1y, selectedsep_ch1w, selectedsep_ch1h,
                   0, dy);
               move_pane(selectedsep->parent->child2, selectedsep_ch2x, selectedsep_ch2y, selectedsep_ch2w, selectedsep_ch2h,
@@ -756,6 +782,8 @@ eventloop(void)
       }
       else{ // left button up
         selectedsep = (void*)0;
+        selectedsep_ch1_closestsepx = 0;
+        selectedsep_ch1_closestsepy = 0;
       }
 
       prevmousex = mousex;
