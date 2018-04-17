@@ -161,8 +161,6 @@ set_active_pane(int x, int y)
         selectedsep_ch2y = currpaney;
         selectedsep_ch2w = currpanew - currpane->child1dim;
         selectedsep_ch2h = currpaneh;
-
-//        find_closest_sep(currpane->child1, currpanex, currpaney, currpane->child1dim, currpaneh, selectedsep->split);
         return;
       }
     }
@@ -270,10 +268,11 @@ vertsplit(void)
   activepane->child1dim = activepanew / 2;
   splitpane();
   activepane->parent->separator->split = SPLIT_VSEPARATOR;
-  activepanew = activepane->parent->child1dim; // same as /= 2
 
+  pane_visual_select(activepanex + activepane->parent->child1dim, activepaney,
+      activepanew - activepane->parent->child1dim, activepaneh, 1); // unselect other split ch
+  activepanew = activepane->parent->child1dim; // same as /= 2
   pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select curr
-  pane_visual_select(activepanex + activepanew, activepaney, activepanew, activepaneh, 1); // unselect other split ch
 }
 
 void
@@ -287,10 +286,11 @@ horizsplit(void)
   activepane->child1dim = activepaneh / 2;
   splitpane();
   activepane->parent->separator->split = SPLIT_HSEPARATOR;
-  activepaneh = activepane->parent->child1dim; // same as /= 2
 
+  pane_visual_select(activepanex, activepaney + activepane->parent->child1dim,
+      activepanew, activepaneh - activepane->parent->child1dim, 1); // unselect other split ch
+  activepaneh = activepane->parent->child1dim; // same as /= 2
   pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select curr
-  pane_visual_select(activepanex, activepaney + activepaneh, activepanew, activepaneh, 1); // unselect other split ch
 }
 
 void
@@ -480,17 +480,22 @@ destroy_activepane(void)
   }
 
   struct paneholder *activepane_parent = activepane->parent;
-  struct paneholder *otherchild; 
+  struct paneholder *otherchild;
+
+  int activepane_parentx = activepanex;
+  int activepane_parenty = activepaney;
 
   if(activepane == activepane_parent->child2){
     otherchild = activepane_parent->child1;
 
     if(activepane_parent->split == SPLIT_VERTICAL){
       int otherchildw = activepane_parent->child1dim;
+      activepane_parentx -= otherchildw;
       resize_pane(otherchild, activepanex - otherchildw, activepaney, otherchildw, activepaneh, activepanew, 0);
     }
     else if(activepane_parent->split == SPLIT_HORIZONTAL){
       int otherchildh = activepane_parent->child1dim;
+      activepane_parenty -= otherchildh;
       resize_pane(otherchild, activepanex, activepaney - otherchildh, activepanew, otherchildh, 0, activepaneh);
     }
   }
@@ -514,8 +519,14 @@ destroy_activepane(void)
   free(activepane_parent->separator);
   activepane_parent->separator = otherchild->separator;
   activepane_parent->child1dim = otherchild->child1dim;
-  if(activepane_parent->display)
+  if(activepane_parent->display){
+    uchar color = 0x00; // black bg
+    draw(activepane_parentx, activepane_parenty, &color, 1, 0,
+        activepane_parentw, activepane_parenth, 1);
+  
+
     free(activepane_parent->display);
+  }
   activepane_parent->display = otherchild->display;
   activepane_parent->pid = otherchild->pid;
   activepane_parent->pipefromproc = otherchild->pipefromproc;
@@ -527,6 +538,8 @@ destroy_activepane(void)
   }
 
   free(activepane);
+
+  pane_visual_select(activepane_parentx, activepane_parenty, activepane_parentw, activepane_parenth, 1);
 
   activepane = (void*)0;
 }
@@ -773,8 +786,9 @@ eventloop(void)
               selectedsep_ch2w -= dx;
               selectedsep->parent->child1dim += dx;
               selectedsep_ch2x += dx;
-
-              pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+              
+              if(activepane)
+                pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
             }
           }
           else if(selectedsep->split == SPLIT_HSEPARATOR){
@@ -797,7 +811,8 @@ eventloop(void)
               selectedsep->parent->child1dim += dy;
               selectedsep_ch2y += dy;
 
-              pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
+              if(activepane)
+                pane_visual_select(activepanex, activepaney, activepanew, activepaneh, 0); // select active pane again
             }
           }
         }
