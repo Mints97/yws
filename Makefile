@@ -161,7 +161,8 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 AUXFILES=\
-	welcome.bmp\
+	diddy.bmp\
+	y_u_no.bmp\
 
 UPROGS=\
 	_cat\

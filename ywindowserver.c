@@ -193,8 +193,12 @@ set_active_pane(int x, int y)
 
 // revrows is 1 if rows are given in reverse order, as in a BMP
 void
-draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint w, uint h, int revrows)
+draw_bmp(struct paneholder *window, int nbytesperpx, int col, int row, const uchar *bmp_buf, uint w, uint h, int revrows)
 {
+  if(nbytesperpx < 3){
+    printf(1, "Not 32-bit BGRA or 24-bit BGR, Cannot handle bmp file of this format!\n");
+  }
+
   if(window->split != SPLIT_NONE)
     return;
 
@@ -218,7 +222,8 @@ draw_bmp(struct paneholder *window, int col, int row, const uint *bmp_buf, uint 
       && r + rowoffset >= 0 && row + ri + rowoffset >= 0;
       ri++, r = revrows ? r - 1 : r + 1){
     for(int ci = 0; ci + coloffset < w && col + ci + coloffset < VGA_SCREEN_WIDTH; ci++){
-      window->display[OFFSET(row + ri, col + ci, VGA_SCREEN_WIDTH)] = BGRATOC(bmp_buf[OFFSET(r, ci, w)]);
+      uint color = *((uint*)(bmp_buf + nbytesperpx * OFFSET(r, ci, w)));
+      window->display[OFFSET(row + ri, col + ci, VGA_SCREEN_WIDTH)] = BGRATOC(color);
     }
   }
 }
@@ -615,6 +620,8 @@ make_sh(void)
   return toserv; // end invariant: read from returned fd, write to next fd
 }
 
+#define BMP_HEADER_START_SIZE 0x36
+
 int
 proccomm(int *proccomm_toserv, int *proccomm_toproc, int npipes)
 {
@@ -658,17 +665,24 @@ proccomm(int *proccomm_toserv, int *proccomm_toproc, int npipes)
             continue;
           }
 
-          char imgheader[0x36] = {0};
+          // Using data from http://www.fastgraph.com/help/bmp_header_format.html
+          char imgheader[BMP_HEADER_START_SIZE] = {0};
 
-          read(fd, imgheader, 0x36);
+          read(fd, imgheader, BMP_HEADER_START_SIZE);
+
+          uint imgdataoffset = ((uint*)(imgheader + 0xA))[0];
 
           uint w = ((uint*)(imgheader + 0x12))[0];
           uint h = ((uint*)(imgheader + 0x16))[0];
 
-          uint *imgdata = malloc(w * h * 4);
+          uint nbits = ((uint*)(imgheader + 28))[0];
+
+          uint offset = imgdataoffset > BMP_HEADER_START_SIZE ? imgdataoffset - BMP_HEADER_START_SIZE : 0;
+
+          uchar *imgdata = malloc(offset + w * h * 4);
           //printf(1, "reading image...\n");
 
-          if(read(fd, imgdata, w * h * 4) < 0){
+          if(read(fd, imgdata, offset + w * h * 4) < 0){
             printf(1, "Failed to read file %s\n", buf + 8);
             printf(proccomm_toproc[i], "nack");
             close(fd);
@@ -676,9 +690,7 @@ proccomm(int *proccomm_toserv, int *proccomm_toproc, int npipes)
             continue;
           }
 
-          //printf(1, "read image!\n");
-
-          draw_bmp(targetpane, 0, 0, imgdata, w, h, 1);
+          draw_bmp(targetpane, nbits / 8, 0, 0, imgdata + offset, w, h, 1);
 
           draw(targetpanex + BORDERTHICKNESS, targetpaney + BORDERTHICKNESS, targetpane->display, 0,
               VGA_SCREEN_WIDTH,

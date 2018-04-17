@@ -2,9 +2,11 @@
 #include "user.h"
 
 int
-main(void)
+main(int argc, char *argv[])
 {
-  printf(4, "drawbmp welcome.bmp");
-  while(1);
+  if(argc > 1) {
+    printf(4, "drawbmp %s", argv[1]);
+    while(1);
+  }
   exit();
 }
