@@ -1,3 +1,5 @@
+#include "vga.h"
+
 struct stat;
 struct rtcdate;
 
@@ -24,8 +26,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
-int draw(uint x, uint y, uchar *imgdata, int onecolor, uint dimw, uint w, uint h, int drawthrough);
-int drawmasked(uint x, uint y, uchar *imgdata, char *mask, uint w, uint h, int drawthrough);
+int draw(uint x, uint y, const pxval *imgdata, int onecolor, uint dimw, uint w, uint h, int drawthrough);
+int drawmasked(uint x, uint y, const pxval *imgdata, char *mask, uint w, uint h, int drawthrough);
 int redraw(uint x, uint y, uint w, uint h);
 int getuserevent(void);
 int getpipesize(int pipe);

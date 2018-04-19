@@ -70,7 +70,7 @@ redraw(int col, int row, uint w, uint h, int fromcursor)
 }
 
 void
-draw(int col, int row, const uchar *buf, int onecolor, uint dimw, uint w, uint h, enum drawdest dest, int fromcursor)
+draw(int col, int row, const pxval *buf, int onecolor, uint dimw, uint w, uint h, enum drawdest dest, int fromcursor)
 {
   int coloffset = 0;
   int rowoffset = 0;
@@ -113,7 +113,7 @@ draw(int col, int row, const uchar *buf, int onecolor, uint dimw, uint w, uint h
 }
 
 void
-draw_masked(int col, int row, const unsigned char *buf, const unsigned char *mask, uint w, uint h, enum drawdest dest, int fromcursor)
+draw_masked(int col, int row, const pxval *buf, const uchar *mask, uint w, uint h, enum drawdest dest, int fromcursor)
 {
   int coloffset = 0;
   int rowoffset = 0;

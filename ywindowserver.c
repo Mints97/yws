@@ -4,6 +4,8 @@
 #include "fcntl.h"
 #include "param.h"
 
+#define BGCOLOR BLACK
+
 enum splittype{
   SPLIT_VERTICAL,   // one left, one right
   SPLIT_HORIZONTAL, // one above, one below
@@ -27,7 +29,7 @@ struct paneholder{
 
   enum splittype split;
 
-  uchar *display; // if this is not 0, do not split
+  pxval *display;
   int pid;
   int pipefromproc;
   int pipetoproc;
@@ -59,7 +61,7 @@ static int ncollapsed = 0;
 void
 pane_visual_select(int x, int y, int w, int h, int unselect)
 {
-  uchar color = unselect ? 0xd7 : 0x18; // white or blue
+  uchar color = unselect ? WHITE : GREEN;
 
   draw(x, y, &color, 1, 0, w, BORDERTHICKNESS, 1); // top border
   draw(x, y, &color, 1, 0, BORDERTHICKNESS, h, 1); // left border
@@ -134,8 +136,6 @@ set_active_pane(int x, int y)
         selectedsep_ch2y = currpaney + currpane->child1dim;
         selectedsep_ch2w = currpanew;
         selectedsep_ch2h = currpaneh - currpane->child1dim;
-
-//        find_closest_sep(currpane->child1, currpanex, currpaney, currpanew, currpane->child1dim, selectedsep->split);
         return;
       }
     }
@@ -260,7 +260,7 @@ splitpane(void)
 void
 vertsplit(void)
 {
-  uchar color = 0x00; // black bg
+  uchar color = BGCOLOR; // black bg
   draw(activepanex + activepanew / 2 + BORDERTHICKNESS, activepaney, &color, 1, 0,
       activepanew - activepanew / 2 - 2 * BORDERTHICKNESS, activepaneh, 1);
   
@@ -278,7 +278,7 @@ vertsplit(void)
 void
 horizsplit(void)
 {
-  uchar color = 0x00; // black bg
+  uchar color = BGCOLOR; // black bg
   draw(activepanex, activepaney + activepaneh / 2 + BORDERTHICKNESS, &color, 1, 0,
       activepanew, activepaneh - activepaneh / 2 - 2 * BORDERTHICKNESS, 1);
 
@@ -330,7 +330,7 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
               dimchangex, paneh - 2 * BORDERTHICKNESS, 1);
         }
         else{
-          uchar color = 0x00; // black bg
+          uchar color = BGCOLOR; // black bg
           draw(panex + panew - BORDERTHICKNESS, paney, &color, 1, 0, dimchangex, paneh, 1);
         }
       }
@@ -356,7 +356,7 @@ resize_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
               panew - 2 * BORDERTHICKNESS, dimchangey, 1);
         }
         else{
-          uchar color = 0x00; // black bg
+          uchar color = BGCOLOR; // black bg
           draw(panex, paney + paneh - BORDERTHICKNESS, &color, 1, 0, panew, dimchangey, 1);
         }
       }
@@ -411,7 +411,7 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
             panew - (compress ? dimchangex : 0) - 2 * BORDERTHICKNESS, paneh - 2 * BORDERTHICKNESS, 1);
       }
       else{
-        uchar color = 0x00; // black bg
+        uchar color = BGCOLOR; // black bg
         if(dimchangex < 0){
           draw(panex + dimchangex, paney, &color, 1, 0, -dimchangex + BORDERTHICKNESS, paneh, 1);
         }
@@ -445,7 +445,7 @@ move_pane(struct paneholder *pane, int panex, int paney, int panew, int paneh,
             panew - 2 * BORDERTHICKNESS, paneh - (compress ? dimchangey : 0) - 2 * BORDERTHICKNESS, 1);
       }
       else{
-        uchar color = 0x00; // black bg
+        uchar color = BGCOLOR; // black bg
         if(dimchangey < 0){
           draw(panex, paney + dimchangey, &color, 1, 0, panew, -dimchangey + BORDERTHICKNESS, 1);
         }
@@ -466,7 +466,7 @@ destroy_activepane(void)
   if(activepane == rootpane){
     if(activepane->display){
       free(activepane->display);
-      uchar color = 0x00; // black bg
+      uchar color = BGCOLOR; // black bg
       draw(0, 0, &color, 1, 0, VGA_SCREEN_WIDTH, VGA_SCREEN_HEIGHT, 1);
     }
     activepane->display = (void*)0;
@@ -520,7 +520,7 @@ destroy_activepane(void)
   activepane_parent->separator = otherchild->separator;
   activepane_parent->child1dim = otherchild->child1dim;
   if(activepane_parent->display){
-    uchar color = 0x00; // black bg
+    uchar color = BGCOLOR; // black bg
     draw(activepane_parentx, activepane_parenty, &color, 1, 0,
         activepane_parentw, activepane_parenth, 1);
   
@@ -535,6 +535,7 @@ destroy_activepane(void)
   if(otherchild->split == SPLIT_VERTICAL || otherchild->split == SPLIT_HORIZONTAL){
     otherchild->child1->parent = activepane_parent;
     otherchild->child2->parent = activepane_parent;
+    otherchild->separator->parent = activepane_parent;
   }
 
   free(activepane);
@@ -654,7 +655,7 @@ proccomm(int *proccomm_toserv, int *proccomm_toproc, int npipes)
           }
           
           activepane->display = malloc(VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT);
-          memset(activepane->display, 0x00, VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT); // set bg color, maybe proc should be able to set it?
+          memset(activepane->display, BGCOLOR, VGA_SCREEN_WIDTH * VGA_SCREEN_HEIGHT); // set bg color, maybe proc should be able to set it?
           targetpanew = activepanew;
           targetpaneh = activepaneh;
           targetpanex = activepanex;
