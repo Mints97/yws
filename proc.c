@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "messagebus.h"
 
 struct {
   struct spinlock lock;
@@ -67,6 +68,8 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
+
+  externputevent(PID_CREATE, p->pid);
 
   return p;
 }

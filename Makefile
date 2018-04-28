@@ -15,6 +15,7 @@ OBJS = \
 	lapic.o\
 	log.o\
 	main.o\
+	messagebus.o\
 	mp.o\
 	picirq.o\
 	pipe.o\

@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "x86.h"
+#include "messagebus.h"
 
 static void startothers(void);
 static void mpmain(void)  __attribute__((noreturn));
@@ -30,6 +31,7 @@ main(void)
   cursorinit();     // NEW: enable mouse
   vgainit();       // NEW: set up VGA palette
   cursor_action(0, 0, 0, 0, 0, 0); // NEW: set cursor
+  mbusinit();      // NEW: set up message bus for PID events
   uartinit();      // serial port
   pinit();         // process table
   tvinit();        // trap vectors

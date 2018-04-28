@@ -19,6 +19,11 @@ main(void)
   dup(0);  // stdout
   dup(0);  // stderr
 
+  if(open("mbus", O_RDWR) < 0) {
+    mknod("mbus", 2, 1);
+    open("mbus", O_RDWR);
+  }
+
   for(;;){
     printf(1, "init: starting window server\n");
     pid = fork();

@@ -36,6 +36,7 @@ struct devsw {
 extern struct devsw devsw[];
 
 #define CONSOLE 1
+#define MESSAGEBUS 2
 
 //PAGEBREAK!
 // Blank page.
