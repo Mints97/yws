@@ -27,6 +27,8 @@ static const unsigned char cursor[CURSOR_WIDTH * CURSOR_HEIGHT] = {
   WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, BLACK, BLACK, WHITE, WHITE, WHITE,
 };
 
+// Mask to use for drawing the cursor
+// A masking strategy will be used to draw this pattern on the screen
 static const unsigned char cursor_mask[CURSOR_WIDTH * CURSOR_HEIGHT] = {
   1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -50,6 +52,8 @@ static const unsigned char cursor_mask[CURSOR_WIDTH * CURSOR_HEIGHT] = {
 
 struct spinlock cursorlock;
 
+// Called by a trap to register a new mouse event and put it on the
+// event queue
 void
 cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent)
 {
@@ -62,6 +66,7 @@ cursor_action(int lbtn, int rbtn, int mbtn, int dx, int dy, int realevent)
 
   redraw(mousex, mousey, CURSOR_WIDTH, CURSOR_HEIGHT, 1);
 
+  // Adjusts the cursor position based on given deltas
   mousex += dx;
   mousey += dy;
 

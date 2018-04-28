@@ -19,6 +19,7 @@ main(void)
   dup(0);  // stdout
   dup(0);  // stderr
 
+  // Create the mbus device file
   if(open("mbus", O_RDWR) < 0) {
     mknod("mbus", 2, 1);
     open("mbus", O_RDWR);
@@ -32,6 +33,7 @@ main(void)
       exit();
     }
     if(pid == 0){
+      // Forks ywindowserver, which will start sh. 
       exec("ywindowserver", argv);
       printf(1, "init: exec ywindowserver failed\n");
       exit();

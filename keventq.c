@@ -26,6 +26,8 @@ initeventq(void)
   initlock(&(queue.qlock), "event_queue");
 }
 
+// Enqueue an event
+// This will simply fail when event queue will get full
 static int 
 enqevent(int event)
 {
@@ -59,6 +61,8 @@ enq_kbevent(uchar c, int released, int shiftheld, int ctlheld)
   return enqevent((1 << 29) | ((!!released) << 10) | ((!!shiftheld) << 9) | ((!!ctlheld) << 8) | (((ushort)c) & 0xFF));
 }
 
+// Dequeue an event
+// Will fail when queue is empty
 int
 deqevent(void)
 {

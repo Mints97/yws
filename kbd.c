@@ -3,6 +3,8 @@
 #include "defs.h"
 #include "kbd.h"
 
+// Moved from kbdgetc
+// Will be used elsewhere!
 static int
 applycaps(uint c, uint shift)
 {
@@ -38,6 +40,8 @@ kbdgetc(void)
     data = (shift & E0ESC ? data : data & 0x7F);
     shift &= ~(shiftcode[data] | E0ESC);
 
+    // Decodes the keyboard event, and puts it on the queue
+    // for Y to read
     uchar evc = charcode[shift & SHIFT][data];
     while(enq_kbevent(evc, 1, shift & SHIFT, shift & CTL) < 0); // hang
     return 0;
