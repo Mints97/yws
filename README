@@ -1,3 +1,20 @@
+# YWS
+
+The Y Window System is a simple tile-based window system for the xv6 OS.
+
+To launch, run "make qemu".
+
+Ctrl ' splits a tile horizontally, Ctrl , splits it vertically, Ctrl - closes the current tile, Ctrl = opens a new shell.
+Tiles can be selected by mouse, the selected tile is highlighted in green.
+Tiles can be resized by dragging the boundaries with a mouse.
+
+A program launched in a shell can use file descriptors 3 and 4 to communicate with the window server and send it commands.
+An example is the imgviewer program, which can display bmp files.
+Usage: "imgviewer path-to-image". Examples: "imgviewer diddy.bmp", "imgviewer y_u_no.bmp".
+
+
+
+# xv6
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
 Version 6 (v6).  xv6 loosely follows the structure and style of v6,
 but is implemented for a modern x86-based multiprocessor using ANSI C.
