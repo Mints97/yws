@@ -12,7 +12,9 @@ A program launched in a shell can use file descriptors 3 and 4 to communicate wi
 An example is the imgviewer program, which can display bmp files.
 Usage: "imgviewer path-to-image". Examples: "imgviewer diddy.bmp", "imgviewer y_u_no.bmp".
 
+![example usage](https://raw.githubusercontent.com/Mints97/yws/spring2018/display_example.png)
 
+A full description is available here: https://github.com/Mints97/yws/blob/spring2018/CS%203210%20-%20Final%20Project%20Writeup.pdf
 
 # xv6
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix
